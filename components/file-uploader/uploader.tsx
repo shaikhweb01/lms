@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useCallback, useState } from "react";
@@ -20,7 +21,13 @@ interface UploaderState {
   fileType: "image" | "video";
 }
 
-export function Uploader() {
+interface iAppProps {
+  value?:string,
+  onChange?:(value:string)=>void,
+
+}
+
+export function Uploader({onChange,value}:iAppProps) {
   const [fileState, setFileState] = useState<UploaderState>({
     error: false,
     file: null,
@@ -29,49 +36,55 @@ export function Uploader() {
     progress: 0,
     isDeleting: false,
     fileType: "image",
+    key:value,
   });
 
-  async function uploadFile(file: File) {
+ async function uploadFile(file: File) {
+  setFileState((prev) => ({
+    ...prev,
+    uploading: true,
+    progress: 0,
+  }));
+
+  try {
+    // Simulate upload progress for demo purposes
+    const progressInterval = setInterval(() => {
+      setFileState((prev) => {
+        const newProgress = Math.min(prev.progress + Math.random() * 20, 90);
+        return { ...prev, progress: Math.round(newProgress) };
+      });
+    }, 200);
+
+    // Simulate upload time
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    clearInterval(progressInterval);
+
+    const uploadedKey = `uploaded-${file.name}`;
+
+    // Simulate successful upload
     setFileState((prev) => ({
       ...prev,
-      uploading: true,
-      progress: 0,
+      uploading: false,
+      progress: 100,
+      key: uploadedKey,
     }));
 
-    try {
-      // Simulate upload progress for demo purposes
-      const progressInterval = setInterval(() => {
-        setFileState((prev) => {
-          const newProgress = Math.min(prev.progress + Math.random() * 20, 90);
-          return { ...prev, progress: Math.round(newProgress) };
-        });
-      }, 200);
+    // Pass the new key back to parent
+    onChange?.(uploadedKey);
 
-      // Simulate upload time
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      clearInterval(progressInterval);
-
-      // Simulate successful upload
-      setFileState((prev) => ({
-        ...prev,
-        uploading: false,
-        progress: 100,
-        key: `uploaded-${file.name}`,
-      }));
-      
-      toast.success("File uploaded successfully!");
-
-    } catch (error) {
-      toast.error("Something went wrong");
-      setFileState((prev) => ({
-        ...prev,
-        progress: 0,
-        error: true,
-        uploading: false,
-      }));
-    }
+    toast.success("File uploaded successfully!");
+  } catch (error) {
+    toast.error("Something went wrong");
+    setFileState((prev) => ({
+      ...prev,
+      progress: 0,
+      error: true,
+      uploading: false,
+    }));
   }
+}
+
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -105,17 +118,22 @@ export function Uploader() {
   }
 
   function handleRemove() {
-    setFileState({
-      error: false,
-      file: null,
-      id: null,
-      uploading: false,
-      progress: 0,
-      isDeleting: false,
-      fileType: "image",
-    });
-    toast.success("File removed");
-  }
+  setFileState((prev) => ({
+    ...prev,
+    error: false,
+    file: null,
+    id: null,
+    uploading: false,
+    progress: 0,
+    isDeleting: false,
+    fileType: "image", // default type
+   // also clear key if it was set
+  }));
+  
+  onChange?.("");
+  toast.success("File removed");
+}
+
 
   function renderContent() {
     if (fileState.uploading) {
@@ -151,6 +169,7 @@ export function Uploader() {
     multiple: false,
     maxSize: 5 * 1024 * 1024, // 5MB
     onDropRejected: rejectedFiles,
+    disabled:fileState.uploading || !!fileState.objectUrl,
   });
 
   return (

@@ -1,4 +1,4 @@
-import "server-only"
+
 import arcjet, {shield,slidingWindow,detectBot,fixedWindow,protectSignup,sensitiveInfo} from "@arcjet/next"
 import { env } from "./env"
 export{
@@ -16,6 +16,8 @@ export default arcjet({
     rules:[
         shield({
             mode:'LIVE',
+            
         })
-    ]
+    ],
+    
 })
